@@ -16,7 +16,7 @@ payee_id = "1185"
 gateway_url = "https://www.portmone.com.ua/gateway/"
 
 [logs]
-project_name = "bot"
+project_name = "telegram_bot"
 show_datetime = true
 datetime_format = "%Y-%m-%d %H:%M:%S"
 show_debug_logs = false

@@ -9,7 +9,6 @@ AUTH = (config.wp.user, config.wp.application_password.get_secret_value())
 async def upload_media_to_wordpress(file_bytes: bytes, filename: str = "photo.jpg") -> Optional[int]:
     url = f"{config.wp.url}/wp-json/wp/v2/media"
 
-    # Динамічно визначаємо mime-type за розширенням файлу
     content_type, _ = mimetypes.guess_type(filename)
     if not content_type:
         content_type = "image/jpeg"
@@ -44,7 +43,7 @@ async def create_lisfinity_listing(
     price: int,
     category_id: Optional[int] = None,
     media_ids: Optional[List[int]] = None,
-    taxonomy_slug: str = "listing-category"  # Вкажіть точний slug таксономії Lisfinity
+    taxonomy_slug: str = "listing-category"
 ) -> Optional[int]:
     url = f"{config.wp.url}/wp-json/custom/v1/create-listing"
 
@@ -60,7 +59,6 @@ async def create_lisfinity_listing(
     if featured_media: 
         payload["featured_media"] = featured_media
     
-    # Мета-поля передаємо тільки якщо вони дозволені REST API
     payload["meta"] = {
         "price": price,
     }
@@ -68,7 +66,6 @@ async def create_lisfinity_listing(
     if len(media_ids) > 1:
         payload["meta"]["gallery_images"] = media_ids
 
-    # Кастомна таксономія Lisfinity замість стандартного "categories"
     if category_id:
         payload[taxonomy_slug] = [category_id]
     
@@ -80,7 +77,6 @@ async def create_lisfinity_listing(
                 post_data = response.json()
                 return post_data.get("id")
             else:
-                # Виводимо детальну помилку від WP REST API
                 print(f"❌ WP Listing Error [{response.status_code}]: {response.text}")
                 return None
         except Exception as e:

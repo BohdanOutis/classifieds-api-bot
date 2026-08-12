@@ -18,7 +18,6 @@ async def get_bot_stats(session: AsyncSession = Depends(get_async_session)):
     )
     total_ads = (await session.execute(ads_query)).scalar() or 0
 
-    # # 3. Загальна сума зароблених грошей (наприклад, з таблиці платежів або суми оголошень)
     # revenue_query = select(func.sum(Payment.amount)).where(
     #     Payment.status == "success"
     # )

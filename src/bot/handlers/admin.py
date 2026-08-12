@@ -199,7 +199,6 @@ async def show_advertisement_page(
         index: int,
         photo_index: int,
 ):
-    # Отримуємо оголошення користувача
     ads_response = await api_client.get("/ads/", params={"status": "pending"})
 
     if ads_response.status_code == 200:

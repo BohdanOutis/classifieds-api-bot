@@ -21,8 +21,6 @@ logger: FilteringBoundLogger = structlog.get_logger()
 async def main() -> None:
     import hupper
     
-    # Hupper починає стежити за файлами. 
-    # Якщо щось зміниться, він сам перезапустить цей же процес Python.
     reloader = hupper.start_reloader("src.bot.__main__.main")
     
     structlog.configure(**get_structlog_config(config.logs))

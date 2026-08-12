@@ -68,7 +68,6 @@ async def my_advertisement_switcher(
     await callback.answer()
 
 
-# Заглушка для інфо-кнопки по центру
 @router.callback_query(F.data == "current_page_info")
 async def current_page_info_handler(callback: CallbackQuery):
     await callback.answer("Це поточна сторінка", show_alert=False)

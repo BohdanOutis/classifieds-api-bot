@@ -20,7 +20,7 @@ class BotConfig(BaseModel):
     token: SecretStr
 
 
-class DbConfig(BaseModel):  # Змінено з BaseSettings на BaseModel, щоб усе йшло через Settings
+class DbConfig(BaseModel):
     host: str = "localhost"
     port: int = 5432
     user: str = "postgres"
@@ -29,7 +29,6 @@ class DbConfig(BaseModel):  # Змінено з BaseSettings на BaseModel, щ�
 
     @property
     def build_url(self) -> str:
-        # Тепер беремо реальні значення з конфігу!
         pwd = self.password.get_secret_value()
         return f"postgresql+asyncpg://{self.user}:{pwd}@{self.host}:{self.port}/{self.name}"
 
@@ -89,7 +88,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_nested_delimiter="__",  # Змінні в .env мають бути вигляду DB__HOST, DB__PASSWORD
+        env_nested_delimiter="__",
         extra="ignore",
     )
 
@@ -104,9 +103,9 @@ class Settings(BaseSettings):
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         return (
             init_settings,
-            env_settings,      # ENV змінні з Docker мають найвищий пріоритет!
-            dotenv_settings,   # Потім .env
-            TomlConfigSettingsSource(settings_cls), # Потім settings.toml
+            env_settings,
+            dotenv_settings,
+            TomlConfigSettingsSource(settings_cls),
         )
 
 

@@ -10,9 +10,6 @@ from src.core.config import LogConfig, LogRenderer
 
 
 class ProjectNameProcessor:
-    """
-    Добавляет имя проекта в лог, может пригодиться при агрегировании логов куда-нибудь
-    """
     def __init__(self, project_name: str):
         self.project_name = project_name
 
@@ -24,9 +21,6 @@ class ProjectNameProcessor:
 
 
 def get_structlog_config(log_config: LogConfig) -> dict:
-    """
-    Формирует конфигурацию для structlog
-    """
     if log_config.show_debug_logs:
         min_level = logging.DEBUG
     else:
@@ -55,10 +49,6 @@ def get_structlog_config(log_config: LogConfig) -> dict:
 
 
 def get_processors(log_config: LogConfig) -> list:
-    """
-    Формирует список процессоров для трансформации логов
-    В зависимости от настроек выбираются те или иные процессоры.
-    """
     def custom_json_serializer(data, *args, **kwargs):
         result = dict()
         for key in ("level", "event"):
@@ -71,7 +61,6 @@ def get_processors(log_config: LogConfig) -> list:
         return dumps(result, default=str)
 
     def custom_console_serializer(logger, method_name: str, event_dict: dict) -> dict:
-        """Убирает внутренние ключи structlog из вывода в терминал"""
         if "_from_structlog" in event_dict:
             event_dict.pop("_from_structlog")
             event_dict.pop("_record")
