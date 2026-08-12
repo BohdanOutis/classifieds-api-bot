@@ -1,0 +1,56 @@
+services: 
+  db:
+    image: postgres:16-alpine
+    container_name: classifieds_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: jlbyldf
+      POSTGRES_DB: classifieds_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d classifieds_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: classifieds_api
+    restart: always
+    command: sh -c "alembic upgrade head && uvicorn src.api.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - DB__HOST=db
+    depends_on:
+      db:
+        condition: service_healthy
+
+  bot:
+    build: .
+    container_name: classifieds_bot
+    restart: always
+    command: python -m src.bot
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - DB__HOST=db
+      - API__BASE_URL=http://api:8000/api/v1
+    depends_on:
+      db: 
+        condition: service_healthy
+      api: 
+        condition: service_started
+
+volumes:
+  postgres_data:

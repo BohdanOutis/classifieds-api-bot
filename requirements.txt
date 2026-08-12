@@ -1,0 +1,43 @@
+# --- Core Frameworks & Async ---
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+aiogram==3.29.0
+httpx>=0.27.0
+aiofiles==25.1.0
+
+# --- Database & Migrations ---
+sqlalchemy>=2.0.30
+asyncpg>=0.29.0
+alembic>=1.13.0
+apscheduler>=3.10.0
+
+# --- Settings & Pydantic ---
+pydantic==2.13.4
+pydantic-settings==2.14.1
+pydantic_core==2.46.4
+python-dotenv==1.2.2
+
+# --- Utilities & Logging ---
+structlog==26.1.0
+magic-filter==1.0.12
+certifi==2026.6.17
+colorama==0.4.6
+typing_extensions==4.15.0
+feedparser
+apscheduler
+hupper
+
+# --- Async HTTP dependencies ---
+aiohttp==3.14.1
+aiohappyeyeballs==2.6.2
+aiosignal==1.4.0
+attrs==26.1.0
+frozenlist==1.8.0
+idna==3.18
+multidict==6.7.1
+propcache==0.5.2
+yarl==1.24.2
+anyio==4.14.0
+annotated-types==0.7.0
+typing-inspection==0.4.2
+watchfiles==1.2.0
