@@ -1,15 +1,15 @@
 [db]
-host = "db"
+host = "localhost"
 port = 5432
 user = "postgres"
-name = "classifieds_db"
+name = "bot_db"
 
 [wp]
 user = "Furio"
 url = "http://my-test-site.local"
 
 [api]
-base_url = "http://api:8000/api/v1"
+base_url = "http://localhost:8000/api/v1"
 
 [portmone]
 payee_id = "1185"

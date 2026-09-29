@@ -15,3 +15,8 @@ def admin_kb() -> ReplyKeyboardMarkup:
     
     return builder.as_markup(resize_keyboard=True)
 
+def cancle_btn() -> ReplyKeyboardMarkup:
+    builder = ReplyKeyboardBuilder()
+    builder.button(text="❌ Скасувати")
+    builder.adjust()
+    return builder.as_markup(resize_keyboard=True)

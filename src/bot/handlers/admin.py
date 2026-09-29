@@ -5,11 +5,12 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
+from aiogram.exceptions import TelegramAPIError
 
 import httpx
 
 from ..filters.admin import IsAdmin
-from ..keyboards.admin_kb import admin_kb
+from ..keyboards.admin_kb import admin_kb, cancle_btn
 from ..services.wordpress import upload_media_to_wordpress, create_lisfinity_listing
 
 router = Router()
@@ -48,9 +49,23 @@ async def admin_panel(message: Message):
 @router.message(F.text == "👑 Надати VIP")
 async def give_vip(message: Message, state: FSMContext):
     await message.answer(
-        text="Напишіть юзернейм користувача"
+        text="Напишіть юзернейм користувача",
+        reply_markup=cancle_btn()
     )
     await state.set_state(VipStates.waiting_for_username)
+
+
+@router.message(F.text == "❌ Скасувати")
+async def cancel(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state is None:
+        return
+    await state.clear()
+    await message.answer(
+        text="Дію скасовано",
+        reply_markup=admin_kb()
+    )
+
 
 @router.message(VipStates.waiting_for_username)
 async def proccess_vip_status(message: Message, api_client: httpx.AsyncClient, state: FSMContext, bot: Bot):
@@ -65,7 +80,11 @@ async def proccess_vip_status(message: Message, api_client: httpx.AsyncClient, s
         )
         return
     elif user_response.status_code != 200:
-        await message.answer("Помилка сервера при пошуку користувача.")
+        await state.clear()
+        await message.answer(
+            "Помилка сервера при пошуку користувача.",
+            reply_markup=admin_kb()
+        )
         return
 
     user_data = user_response.json()
@@ -75,13 +94,16 @@ async def proccess_vip_status(message: Message, api_client: httpx.AsyncClient, s
 
     if vip_response.status_code == 200:
         user_data = vip_response.json()
-        expire_date = user_data['vip_expire_at'][:10]
+        expire_date = user_data['vip_expires_at'][:10]
+
+        await state.clear()
 
         await message.answer(
             f"✅ <b>VIP-статус успішно надано!</b>\n\n"
             f"👤 Користувач: @{username}\n"
             f"🆔 Telegram ID: <code>{tg_id}</code>\n"
-            f"📅 Дійсний до: <b>{expire_date}</b>"
+            f"📅 Дійсний до: <b>{expire_date}</b>",
+            reply_markup=admin_kb()
         )
 
         if tg_id:
@@ -90,18 +112,15 @@ async def proccess_vip_status(message: Message, api_client: httpx.AsyncClient, s
                     chat_id=tg_id,
                     text="🎉 Вітаємо! Адміністратор надав вам <b>VIP-статус</b> на 30 днів!"
                 )
-            except Exception:
-                pass
-
-    elif vip_response.status_code == 404:
-        await message.answer(
-            f"Користувача @{username} не знайдено в базі бота!\n"
-            "Переконайтеся, що він запустив бота хоча б один раз."
-        )
+            except TelegramAPIError:
+                await message.answer("⚠️ Сповіщення не доставлено (користувач заблокував бота).")
     else:
-        await message.answer("Помилка сервера. Спробуйте пізніше.")
+        await state.clear()
+        await message.answer(
+            "Помилка сервера. Спробуйте пізніше.",
+            reply_markup=admin_kb()
+        )
 
-    await state.clear()
 
 # ---------------------
 # Надання статусу Admin
@@ -110,7 +129,8 @@ async def proccess_vip_status(message: Message, api_client: httpx.AsyncClient, s
 @router.message(F.text == "🔑 Надати статус адміна")
 async def give_admin(message: Message, state: FSMContext):
     await message.answer(
-        text="Напишіть юзернейм користувача"
+        text="Напишіть юзернейм користувача",
+        reply_markup=cancle_btn()
     )
     await state.set_state(AdminStates.waiting_for_username)
 
@@ -127,7 +147,11 @@ async def proccess_admin_status(message: Message, api_client: httpx.AsyncClient,
         )
         return
     elif user_response.status_code != 200:
-        await message.answer("Помилка сервера при пошуку користувача.")
+        await state.clear()
+        await message.answer(
+            "Помилка сервера при пошуку користувача.",
+            reply_markup=admin_kb()
+        )
         return
     
     user_data = user_response.json()
@@ -138,18 +162,17 @@ async def proccess_admin_status(message: Message, api_client: httpx.AsyncClient,
     if response.status_code == 200:
         proccess_admin = response.json()
         await message.answer(
-            text=f"Статус Admin успішно надано користувачу {username}"
+            text=f"Статус Admin успішно надано користувачу {username}",
+            reply_markup=admin_kb()
         )
-
         if tg_id:
             try:
                 await bot.send_message(
                     chat_id=tg_id, 
-                    text="🎉 Вітаємо! Вам надано VIP-статус!"
+                    text="🎉 Вітаємо! Вам надано Admin-статус!"
                 )
             except Exception:
                 pass
-
     elif response.status_code == 404:
         await message.answer(
             text=f"Користувача {username} не знайдено в базі бота! \n"

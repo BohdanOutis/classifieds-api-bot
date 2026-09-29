@@ -25,7 +25,7 @@ class DbConfig(BaseModel):
     port: int = 5432
     user: str = "postgres"
     password: SecretStr
-    name: str = "classifieds_db"
+    name: str = "bot_db"
 
     @property
     def build_url(self) -> str:
@@ -46,7 +46,8 @@ class PortmoneConfig(BaseModel):
 
 
 class ApiConfig(BaseModel):
-    base_url: str = "http://api:8000/api/v1"
+    base_url: str = "http://localhost:8000/api/v1"
+    server_secret_key: SecretStr
 
 
 class LogConfig(BaseModel):

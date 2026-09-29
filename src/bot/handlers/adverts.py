@@ -1,12 +1,17 @@
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InputMediaPhoto
+from aiogram.types import Message, CallbackQuery, InputMediaPhoto, LabeledPrice, PreCheckoutQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters.callback_data import CallbackData
-
 import httpx
 
 router = Router()
+
+class AdvertPayment(CallbackData, prefix="advet_payment"):
+    id: int
+    name: str
+    price: int
+    
 
 class PhotoPagination(CallbackData, prefix="photo_pagination"):
     index: int
@@ -20,6 +25,7 @@ async def adverts(message: Message, api_client: httpx.AsyncClient):
         index=0,
         photo_index=0
     )
+
 
 @router.callback_query(PhotoPagination.filter())
 async def photo_switcher(callback: CallbackQuery, callback_data: PhotoPagination, api_client: httpx.AsyncClient):
@@ -89,7 +95,7 @@ async def show_advertisement_page(
         builder.button(text="⏮ Поп. Оголош.", callback_data=PhotoPagination(index=index - 1, photo_index=0))
         builder.button(text="Наст. Оголош. ⏭", callback_data=PhotoPagination(index=index + 1, photo_index=0))
 
-    builder.button(text="Купити", callback_data=PhotoPagination(index=0, photo_index=0))
+    builder.button(text="Купити", callback_data=AdvertPayment(id=data['id'], name=data['name'], price=data['price']))
     builder.adjust(2)
 
     caption_text = (

@@ -1,36 +1,16 @@
-from datetime import datetime, timedelta, timezone
-import jwt
-from passlib.context import CryptContext
+from fastapi import Security, HTTPException, status
+from fastapi.security import APIKeyHeader
+from .config import config
 
-SECRET_KEY = "YOUR_SUPER_SECRET_KEY_CHANGE_IN_PRODUCTION"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 15
-REFRESH_TOKEN_EXPIRE_DAYS = 7
+X_API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+async def verify_api_key(api_key: str = Security(X_API_KEY_HEADER)):
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    expected_key = config.api.server_secret_key.get_secret_value()
 
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
-
-def create_token(data: dict, expires_delta: timedelta, token_type: str) -> str:
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + expires_delta
-    to_encode.update({"exp": expire, "type": token_type})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-def create_access_token(user_id: int, role: str) -> str:
-    payload = {"sub": str(user_id), "role": role}
-    return create_token(payload, timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES), "access")
-
-def create_refresh_token(user_id: int) -> str:
-    payload = {"sub": str(user_id)}
-    return create_token(payload, timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS), "refresh")
-
-def decode_token(token: str) -> dict | None:
-    try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except jwt.PyJWTError:
-        return None
+    if not api_key or api_key != expected_key:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Invalid or missing X-API-Key header"
+        )
+    return api_key
