@@ -45,12 +45,15 @@ jobs:
 
     - name: Run pytest
       env:
-        # Real postgres CI service credentials
+        # Settings() env vars (pydantic-settings nested delimiter __)
         DB__HOST: localhost
         DB__PORT: "5432"
         DB__USER: postgres
         DB__PASSWORD: postgres
         DB__NAME: bot_db
+        # conftest.py TEST_DATABASE_URL env vars
+        TEST__DB_PASSWORD: postgres
+        TEST__DB_NAME: bot_db
         # Fake values for fields not used in tests but required by Settings()
         BOT__TOKEN: fake_bot_token_for_ci
         WP__URL: http://fake-wp.local
