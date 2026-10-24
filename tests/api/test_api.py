@@ -5,7 +5,7 @@ async def test_health_check(client):
     """Тест перевірки загального стану сервера."""
     response = await client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {"status": "ok", "database": "connected"}
 
 @pytest.mark.anyio
 async def test_get_bot_stats_empty(client):

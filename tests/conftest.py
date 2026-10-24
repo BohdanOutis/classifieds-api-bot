@@ -13,7 +13,6 @@ from src.core.security import verify_api_key
 TEST_DB_PASSWORD = os.getenv("TEST__DB_PASSWORD")
 TEST_DB_NAME = os.getenv("TEST__DB_NAME")
 
-# Використовуємо SQLite в пам'яті для швидких тестів
 TEST_DATABASE_URL = f"postgresql+asyncpg://postgres:{TEST_DB_PASSWORD}@localhost:5432/{TEST_DB_NAME}"
 
 test_engine = create_async_engine(
