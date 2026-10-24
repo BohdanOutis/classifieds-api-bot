@@ -12,7 +12,7 @@ url = "url_to_your_site"
 base_url = "http://localhost:8000/api/v1"
 
 [portmone]
-payee_id = "your_payee_id"
+payee_id = "1111"  # your_payee_id
 gateway_url = "https://www.portmone.com.ua/gateway/"
 
 [logs]

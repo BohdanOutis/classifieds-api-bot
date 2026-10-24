@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -39,13 +39,31 @@ jobs:
         pip install uv
         uv sync
 
+    - name: Prepare settings for tests
+      run: |
+        cp settings.example.toml settings.toml
+
     - name: Run pytest
       env:
-        DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/bot_db
+        # Real postgres CI service credentials
+        DB__HOST: localhost
+        DB__PORT: "5432"
+        DB__USER: postgres
+        DB__PASSWORD: postgres
+        DB__NAME: bot_db
+        # Fake values for fields not used in tests but required by Settings()
+        BOT__TOKEN: fake_bot_token_for_ci
+        WP__URL: http://fake-wp.local
+        WP__USER: fake_user
+        WP__APPLICATION_PASSWORD: fake_wp_password
+        API__SERVER_SECRET_KEY: fake_api_secret_key_for_ci
+        PORTMONE__PAYEE_ID: "0"
+        PORTMONE__GATEWAY_URL: http://fake-portmone.local
+        PORTMONE__SECRET_KEY: fake_portmone_secret
       run: |
         uv run pytest
 
-    - name: Set up Node.js 
+    - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
         node-version: "20"
