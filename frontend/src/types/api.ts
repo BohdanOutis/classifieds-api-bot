@@ -24,6 +24,7 @@ export interface AdvertResponse {
   price: number;
   category: string;
   user_id: number;
+  tg_id?: number | null
   status: string;
   wp_post_id: number | null;
 }

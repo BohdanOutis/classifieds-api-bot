@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from typing import List
+import structlog
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,9 +9,11 @@ from src.core.database import get_async_session
 from src.models.ads_photo import AdvertisementPhoto
 from ..schemas.photo import AdvertPhotoResponse, AdvertPhotoCreate
 
+logger = structlog.get_logger()
+
 router = APIRouter()
 
-@router.post("/")
+@router.post("/", response_model=List[AdvertPhotoResponse], status_code=status.HTTP_201_CREATED)
 async def add_photos(
     data: AdvertPhotoCreate,
     session: AsyncSession = Depends(get_async_session)
@@ -25,6 +28,8 @@ async def add_photos(
     for photo in photos_to_add:
         await session.refresh(photo)
 
+    logger.info("photos_created")
+
     return photos_to_add
 
 @router.get("/", response_model=List[AdvertPhotoResponse])
@@ -34,4 +39,5 @@ async def get_advertisement_photos(
 ):
     query = select(AdvertisementPhoto).where(AdvertisementPhoto.advert_id == advert_id)
     result = await session.execute(query)
+    logger.info("photos_retrieved", advert_id=advert_id)
     return result.scalars().all()

@@ -3,12 +3,15 @@ import hashlib
 import urllib.parse
 from typing import Dict
 
+
 PORTMONE_PAYEE_ID = os.environ("PORTMONE_PAYEE_ID")
 PORTMONE_SECRET_KEY = os.environ("PORTMONE_SECRET_KEY")
 PORTMONE_GATEWAY_URL = os.environ("PORTMONE_GATEWAY_URL")
 
+
 WEBHOOK_SUCCESS_URL = ""
 WEBHOOK_FAILURE_URL = ""
+
 
 def generate_portmone_signature(payee_id: str, shop_order_number: str, amount: str, secret_key: str) -> str:
     raw_str = f"{payee_id}{shop_order_number}{amount}{secret_key}"

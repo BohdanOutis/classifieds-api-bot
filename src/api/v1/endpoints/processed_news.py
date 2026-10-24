@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException, status
 from typing import List
+import structlog
 
 from sqlalchemy import select, exists
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.database import get_async_session
 from src.models.processed_news import ProcessedNews
 from ..schemas.processed_news import ProcessedNewsCreate, ProcessedNewsResponse
+
+logger = structlog.get_logger()
 
 router = APIRouter()
 
@@ -17,6 +20,7 @@ async def is_news_processed(
 ) -> bool:
     query = select(exists().where(ProcessedNews.news_hash == news_hash))
     result = await session.execute(query)
+    logger.info("processed_news_retrieved", news_hash=news_hash[:8])
     return bool(result.scalar())
 
 @router.post("/", response_model=ProcessedNewsResponse)
@@ -28,6 +32,15 @@ async def save_processed_news(
     news = ProcessedNews(**data)
     session.add(news)
 
-    await session.commit()
-    await session.refresh(news)
+    try:
+        await session.commit()
+        await session.refresh(news)
+    except Exception as e:
+        await session.rollback()
+        logger.info("processed_news_save_failed", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to save news (maybe hash duplicate)"
+        )
+    logger.info("processed_news_created", news_id=news.id, news_title=news.title)
     return news

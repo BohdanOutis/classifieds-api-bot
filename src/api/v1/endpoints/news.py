@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from typing import List
+import structlog
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.database import get_async_session
 from src.models.news_sources import NewsSources
 from ..schemas.news_source import NewsSourceRespose
+
+logger = structlog.get_logger()
 
 router = APIRouter()
 
@@ -16,4 +19,5 @@ async def get_active_sources(
 ):
     query = select(NewsSources).where(NewsSources.is_active == True)
     result = await session.execute(query)
+    logger.info("sources_retrieved")
     return list(result.scalars().all())

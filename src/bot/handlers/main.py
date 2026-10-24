@@ -4,7 +4,9 @@ from aiogram.types import Message
 
 from ..keyboards.main_kb import start_kb
 import httpx
+import structlog
 
+logger = structlog.get_logger()
 
 router = Router(name="start")
 
@@ -20,7 +22,8 @@ async def cmd_start(message: Message, api_client: httpx.AsyncClient):
             text=f"{message.from_user.full_name} ти задокшений і тд",
             reply_markup=start_kb()
         )
-    else: 
+    else:
+        logger.warning("server_connection_failed", status_code=response.status_code)
         await message.answer("Сталася помилка при зверненні до сервера.")
 
 @router.message(F.text, Command("help"))

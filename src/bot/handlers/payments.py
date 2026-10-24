@@ -1,10 +1,15 @@
+import httpx
+import structlog
 from aiogram import Router, F
 from aiogram.types import Message, LabeledPrice, PreCheckoutQuery, CallbackQuery
 from aiogram.filters import Command, or_f
-import httpx
+from ...models.payments import PaymentType
+from ...models.advertisement import AdvertisementStatus
 
 from ...core.config import config
 from .adverts import AdvertPayment
+
+logger = structlog.get_logger()
 
 router = Router()
 
@@ -58,15 +63,14 @@ async def process_vip_pre_checkout(pre_checkout_query: PreCheckoutQuery):
     await pre_checkout_query.answer(ok=True)
 
 
-# Окрема перевірка для оголошень (можна додати перевірку в БД, чи оголошення ще є)
+# Окрема перевірка для оголошень
 @router.pre_checkout_query(F.invoice_payload.startswith("advert_pay_"))
 async def process_advert_pre_checkout(pre_checkout_query: PreCheckoutQuery, api_client: httpx.AsyncClient):
     payload = pre_checkout_query.invoice_payload
     advert_id = int(payload.split("advert_pay_")[1])
 
-    # Опціонально: Перевіряємо в API, чи товар не проданий
     response = await api_client.get(f"/ads/{advert_id}")
-    if response.status_code == 200 and response.json().get("status") == "approved":
+    if response.status_code == 200 and response.json().get("status") == AdvertisementStatus.APPROVED.value:
         await pre_checkout_query.answer(ok=True)
     else:
         await pre_checkout_query.answer(ok=False, error_message="Товар вже проданий або недоступний!")
@@ -86,35 +90,42 @@ async def process_vip_successful_payment(
     amount_uah = payment_info.total_amount / 100
     tg_id = message.from_user.id
 
-    response = await api_client.post(
-        "/payments/telegram-success",
+    pay_response = await api_client.post(
+        "/payments/",
         json={
             "tg_id": message.from_user.id,
             "amount": payment_info.total_amount / 100,
             "currency": payment_info.currency,
-            "type": "vip_subscription",
+            "service_type": PaymentType.VIP_SUBSCRIPTION.value,
+            "status": "SUCCESS",
+            "provider": "portmone",
             "provider_charge_id": payment_info.provider_payment_charge_id,
             "telegram_charge_id": payment_info.telegram_payment_charge_id
         }
     )
 
-    response = await api_client.patch(
-        f"/users/{tg_id}/activate-vip", 
-        params={"tg_id": tg_id, "days": 30}
-    )
-
-    if response.status_code == 200:
-        data = response.json()
-        expire_date = data['vip_expires_at'][:10]
-
-        await message.answer(
-            f"🎉 <b>VIP-статус успішно активовано!</b>\n"
-            f"Дійсний до: <b>{expire_date}</b>\n"
-            f"Сума оплати: <b>{amount_uah:.2f} {payment_info.currency}</b>\n"
-            f"Номер чека: <code>{payment_info.provider_payment_charge_id}</code>"
+    if pay_response.status_code in (200, 201, 409):
+        user_response = await api_client.patch(
+            f"/users/{tg_id}/activate-vip", 
+            json={"days": 30}
         )
+
+        if user_response.status_code == 200: 
+            data = user_response.json()
+            expire_date = data['vip_expires_at'][:10]
+
+            await message.answer(
+                f"🎉 <b>VIP-статус успішно активовано!</b>\n"
+                f"Дійсний до: <b>{expire_date}</b>\n"
+                f"Сума оплати: <b>{amount_uah:.2f} {payment_info.currency}</b>\n"
+                f"Номер чека: <code>{payment_info.provider_payment_charge_id}</code>"
+            )
+        else:
+            logger.warning("server_connection_failed", status_code=user_response.status_code)
+            await message.answer("⚠️ Виникла помилка під час активації VIP. Зверніться до підтримки.")
     else:
-        await message.answer("Виникла помилка під час активації VIP. Зверніться до підтримки.")
+        logger.error("payment_record_failed", status_code=pay_response.status_code)
+        await message.answer("⚠️ Виникла помилка під час оплати. Зверніться до підтримки.")
 
 
 # Успішна оплата Оголошення
@@ -128,16 +139,40 @@ async def process_advert_successful_payment(
     payload = payment_info.invoice_payload
 
     advert_id = int(payload.split("advert_pay_")[1])
-    response = await api_client.patch(f"/ads/{advert_id}", json={"status": "sold"})
 
-    if response.status_code == 200:
-        await message.answer(
-            f"🎉 <b>Дякуємо за покупку!</b>\n\n"
-            f"Оплата оголошення №{advert_id} на суму <b>{total_amount} UAH</b> пройшла успішно.\n"
-            f"Статус оголошення змінено на «Продано».",
+    pay_response = await api_client.post(
+            "/payments/",
+            json={
+                "tg_id": message.from_user.id,
+                "ad_id": advert_id,
+                "amount": payment_info.total_amount / 100,
+                "currency": payment_info.currency,
+                "service_type": PaymentType.PRODUCT_PURCHASE.value,
+                "status": "SUCCESS",
+                "provider": "portmone",
+                "provider_charge_id": payment_info.provider_payment_charge_id,
+                "telegram_charge_id": payment_info.telegram_payment_charge_id
+            }
         )
+
+    if pay_response.status_code in (200, 201, 409):
+        ads_response = await api_client.patch(f"/ads/{advert_id}", json={"status": "sold"})
+
+        if ads_response.status_code == 200:
+            await message.answer(
+                f"🎉 <b>Дякуємо за покупку!</b>\n\n"
+                f"Оплата оголошення №{advert_id} на суму <b>{total_amount} UAH</b> пройшла успішно.\n"
+                f"Статус оголошення змінено на «Продано».",
+            )
+        else:
+            logger.warning("server_connection_failed", status_code=ads_response.status_code, advert_id=advert_id)
+            await message.answer(
+                f"⚠️ Оплата пройшла успішно, але виникла помилка оновлення статусу оголошення №{advert_id}.\n"
+                f"Служба підтримки вже сповіщена."
+            )
     else:
+        logger.error("payment_record_failed", status_code=pay_response.status_code)
         await message.answer(
-            f"⚠️ Оплата пройшла успішно, але виникла помилка оновлення статусу оголошення №{advert_id}.\n"
+            f"⚠️ Виникла помилка під час оплати. Зверніться до підтримки.\n"
             f"Служба підтримки вже сповіщена."
         )

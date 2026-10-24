@@ -5,7 +5,7 @@ interface SpinnerProps {
 
 const Spinner = ({ size = 32, className = '' }: SpinnerProps) => (
   <svg
-    className={`spinner ${className}`}
+    className={`inline-block shrink-0 text-[var(--clr-accent-2)] animate-spin ${className}`}
     width={size}
     height={size}
     viewBox="0 0 24 24"
@@ -15,16 +15,14 @@ const Spinner = ({ size = 32, className = '' }: SpinnerProps) => (
     role="status"
   >
     <circle
-      className="spinner__track"
       cx="12"
       cy="12"
       r="10"
       stroke="currentColor"
       strokeWidth="2"
-      strokeOpacity="0.2"
+      className="opacity-20"
     />
     <path
-      className="spinner__arc"
       d="M12 2a10 10 0 0 1 10 10"
       stroke="currentColor"
       strokeWidth="2"

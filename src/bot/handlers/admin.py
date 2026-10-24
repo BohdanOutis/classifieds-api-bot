@@ -8,10 +8,14 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.exceptions import TelegramAPIError
 
 import httpx
+import structlog
 
 from ..filters.admin import IsAdmin
 from ..keyboards.admin_kb import admin_kb, cancle_btn
 from ..services.wordpress import upload_media_to_wordpress, create_lisfinity_listing
+from src.models.advertisement import AdvertisementStatus
+
+logger = structlog.get_logger()
 
 router = Router()
 
@@ -112,7 +116,8 @@ async def proccess_vip_status(message: Message, api_client: httpx.AsyncClient, s
                     chat_id=tg_id,
                     text="🎉 Вітаємо! Адміністратор надав вам <b>VIP-статус</b> на 30 днів!"
                 )
-            except TelegramAPIError:
+            except TelegramAPIError as e:
+                logger.error("notification_failed", chat_id=tg_id, error=str(e))
                 await message.answer("⚠️ Сповіщення не доставлено (користувач заблокував бота).")
     else:
         await state.clear()
@@ -171,8 +176,9 @@ async def proccess_admin_status(message: Message, api_client: httpx.AsyncClient,
                     chat_id=tg_id, 
                     text="🎉 Вітаємо! Вам надано Admin-статус!"
                 )
-            except Exception:
-                pass
+            except TelegramAPIError as e:
+                logger.error("notification_failed", chat_id=tg_id, error=str(e))
+                await message.answer("⚠️ Сповіщення не доставлено (користувач заблокував бота).")
     elif response.status_code == 404:
         await message.answer(
             text=f"Користувача {username} не знайдено в базі бота! \n"
@@ -222,7 +228,7 @@ async def show_advertisement_page(
         index: int,
         photo_index: int,
 ):
-    ads_response = await api_client.get("/ads/", params={"status": "pending"})
+    ads_response = await api_client.get("/ads/", params={"status": AdvertisementStatus.PENDING})
 
     if ads_response.status_code == 200:
         user_advertisements = ads_response.json()
@@ -249,9 +255,7 @@ async def show_advertisement_page(
 
     data = user_advertisements[index]
 
-    photo_response = await api_client.get("/ads_photos/", params={"advert_id": data["id"]})
-
-    photos = photo_response.json() if photo_response.status_code == 200 else []    
+    photos = data.get("photos", [])  
 
     if photos:
         if photo_index < 0:
@@ -301,8 +305,8 @@ async def show_advertisement_page(
                     reply_markup=builder.as_markup(),
                     parse_mode="HTML"
                 )
-        except Exception:
-            await message_or_query.answer()
+        except Exception as e:
+            logger.error("failed_to_change_message", photo=photo, caption_text=caption_text, error=str(e))
     else:
         if photo:
             await message_or_query.answer_photo(
@@ -329,13 +333,12 @@ async def approve_advertisement(
     await callback.answer("Обробка рішення...")
     advert_id = callback_data.advert_id
 
-    advert_response = await api_client.get(f"/ads/{advert_id}", params={"advert_id": advert_id})
+    advert_response = await api_client.get(f"/ads/{advert_id}")
     advert = advert_response.json() if advert_response.status_code == 200 else None
 
     uploaded_media_ids = []
 
-    photo_response = await api_client.get("/ads_photos/", params={"advert_id": advert_id})
-    photos = photo_response.json() if photo_response.status_code == 200 else []
+    photos = advert.get("photos", [])
 
     for photo in photos:
         file_info = await bot.get_file(photo.get('file_id'))
@@ -356,42 +359,48 @@ async def approve_advertisement(
     )
 
     if wp_post_id:
-        response = await api_client.patch(f"/ads/{advert_id}", json={"advert_id": advert_id, "status": "approved", "wp_post_id": wp_post_id})
+        response = await api_client.patch(f"/ads/{advert_id}", json={"status": AdvertisementStatus.APPROVED.value, "wp_post_id": wp_post_id})
         if response.status_code == 200:
             await callback.message.answer(
                 f"✅ Оголошення #{advert_id} схвалено і відправлено на WP (ID: {wp_post_id})"
             )
         elif response.status_code == 404:
+            logger.error("server_connection_failed", status_code=response.status_code)
             return await callback.message.answer(
                 "Оголошення не існує"
             )
         else:
+            logger.error("server_connection_failed", status_code=response.status_code)
             return await callback.message.answer(
                 "Помилка сервера. Спробуйте пізніше"
             )
     else:
+        response = await api_client.patch(f"/ads/{advert_id}", json={"status": AdvertisementStatus.APPROVED.value})
         await callback.message.answer(
             "⚠️ Оголошення схвалено в боті, але НЕ опубліковано на WP"
         )
 
     try:
         await bot.send_message(
-            chat_id=advert['user_id'],
+            chat_id=advert['tg_id'],
             text=f"🎉 Ваше оголошення <b>«{advert['name']}»</b> успішно схвалено та опубліковано!"
         )
-    except Exception:
-        pass
-
-    if callback.message.photo:
-        await callback.message.edit_caption(
-            caption=(callback.message.caption or "") + "\n\n🟢 <b>Схвалено!</b>",
-            reply_markup=None
-        )
-    else:
-        await callback.message.edit_text(
-            text=callback.message.text + "\n\n🟢 <b>Схвалено!</b>",
-            reply_markup=None
-        )
+    except TelegramAPIError as e:
+        logger.error("notification_failed", chat_id=advert['user_id'], error=str(e))
+        await callback.message.answer("⚠️ Сповіщення не доставлено (користувач заблокував бота).")
+    try:
+        if callback.message.photo:
+            await callback.message.edit_caption(
+                caption=(callback.message.caption or "") + "\n\n🟢 <b>Схвалено!</b>",
+                reply_markup=None
+            )
+        else:
+            await callback.message.edit_text(
+                text=callback.message.text + "\n\n🟢 <b>Схвалено!</b>",
+                reply_markup=None
+            )
+    except TelegramAPIError as e:
+        logger.error("response_failed", error=str(e))
     await callback.answer()
 
 @router.callback_query(ModernizationCallback.filter(F.action == "reject"))
@@ -417,22 +426,23 @@ async def proccess_reject_reason(message: Message, state: FSMContext, api_client
     admin_msg_id = state_data["admin_msg_id"]
     admin_chat_id = state_data["admin_chat_id"]
 
-    await api_client.patch(f"/ads/{advert_id}", json={"status": "rejected"})
+    await api_client.patch(f"/ads/{advert_id}", json={"status": AdvertisementStatus.REJECTED.value})
     advert_response = await api_client.get(f"/ads/{advert_id}")
     advert = advert_response.json() if advert_response.status_code == 200 else None
 
     try:
         await bot.send_message(
-            chat_id=advert['user_id'],
+            chat_id=advert['tg_id'],
             text=f"❌ Ваше оголошення «{advert['name']}» було відхилено модератором.\n\n💬 <b>Причина:</b> {reason_text}"
         )
-    except Exception:
-        pass
+    except TelegramAPIError as e:
+        logger.error("notification_failed", chat_id=advert['user_id'], ad_name=advert['name'], reason=reason_text, error=str(e))
+        await message.answer("⚠️ Сповіщення не доставлено (користувач заблокував бота).")
         
     try:
         await bot.edit_message_reply_markup(chat_id=admin_chat_id, message_id=admin_msg_id, reply_markup=None)
-    except Exception:
-        pass
+    except TelegramAPIError as e:
+        logger.error("failed_to_edit_message", chat_id=admin_chat_id, message_id=admin_msg_id, error=str(e))
     
     await message.answer("✅ Причину відправлено автору, статус оголошення оновлено.")
     await state.clear()

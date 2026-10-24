@@ -7,10 +7,13 @@ from aiogram.fsm.context import FSMContext
 
 from aiogram.utils.media_group import MediaGroupBuilder
 
-import httpx 
+import httpx
+import structlog
 
 from ..keyboards.advert_kb import advert_keyboard, get_photos_keyboard
 from ..keyboards.main_kb import start_kb
+
+logger = structlog.get_logger()
 
 router = Router(name="advert")
 
@@ -151,9 +154,11 @@ async def advert_creation_end(message: Message, state: FSMContext, api_client: h
     try:
         await api_client.post("/ads_photos/", json=payload)
     except httpx.ReadTimeout:
+        logger.warning("server_response_timeout")
         await message.answer("⏱️ Сервер довго відповідає. Спробуйте ще раз трохи пізніше.")
         return
-    except httpx.RequestError:
+    except httpx.RequestError as e:
+        logger.error("server_connection_failed", error=str(e))
         await message.answer("❌ Не вдалося з'єднатися з сервером.")
         return
 
@@ -171,6 +176,8 @@ async def advert_creation_end(message: Message, state: FSMContext, api_client: h
         text="Чудово! Ось створене вами оголошення:\n",
         reply_markup=start_kb()
     )
+
+    logger.info("advert_created", name=data['writen_name'])
 
     await message.answer_media_group(
         media=media_builder.build()

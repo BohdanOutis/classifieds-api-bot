@@ -51,7 +51,7 @@ class ApiConfig(BaseModel):
 
 
 class LogConfig(BaseModel):
-    project_name: str = "Epstein"
+    project_name: str = "Enterprise Classifieds Bot"
     show_datetime: bool = True
     datetime_format: str = "%Y-%m-%d %H:%M:%S"
     show_debug_logs: bool = True

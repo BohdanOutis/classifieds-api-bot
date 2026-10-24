@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import CreateAdPage from './pages/CreateAdPage'
+import StatsPage from './pages/StatsPage'
 
 function App() {
   return (
@@ -31,7 +32,17 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+        <Route
+          path='/stats'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <StatsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>

@@ -10,4 +10,3 @@ class IsAdmin(Filter):
         if user and user['status'] == "admin":
             return True
         return False
-

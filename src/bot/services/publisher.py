@@ -1,5 +1,8 @@
 from aiogram import Bot
 import httpx
+import structlog
+
+logger = structlog.get_logger()
 
 CHANNEL_ID = ""
 
@@ -27,4 +30,4 @@ async def publish_news_item(bot: Bot, api_client: httpx.AsyncClient, item: dict)
             }
         )
     except Exception as e:
-        print(f"❌ Помилка публікації новини '{item['title']}': {e}")
+        logger.error("news_publication_failed", title=item['title'], error=str(e))

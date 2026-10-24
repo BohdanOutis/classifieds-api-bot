@@ -1,12 +1,18 @@
 from __future__ import annotations
 from typing import List, Optional
 
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer, String
+from enum import Enum
+from sqlalchemy import Integer, String, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from .ads_photo import AdvertisementPhoto
+
+class AdvertisementStatus(str, Enum):
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    PENDING = "PENDING"
+    SOLD = "SOLD"
 
 class Advertisement(Base):
     __tablename__ = "advertisements"
@@ -18,7 +24,7 @@ class Advertisement(Base):
     description: Mapped[str] = mapped_column(String, nullable=False)
     price: Mapped[int] = mapped_column(Integer, nullable=False)
     category: Mapped[str] = mapped_column(String, nullable=False, default="other", server_default="other")
-    status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending")
+    status: Mapped[AdvertisementStatus] = mapped_column(SQLEnum(AdvertisementStatus), default=AdvertisementStatus.PENDING, server_default=AdvertisementStatus.PENDING.value)
     wp_post_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     advertisement_photo: Mapped[List["AdvertisementPhoto"]] = relationship(back_populates="advertisement")

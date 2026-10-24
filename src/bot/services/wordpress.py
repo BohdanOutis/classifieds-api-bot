@@ -1,8 +1,12 @@
 import os
 import mimetypes
 import httpx
+import structlog
+
 from typing import List, Optional, Dict, Any
 from ...core.config import config
+
+logger = structlog.get_logger()
 
 AUTH = (config.wp.user, config.wp.application_password.get_secret_value())
 
@@ -30,10 +34,10 @@ async def upload_media_to_wordpress(file_bytes: bytes, filename: str = "photo.jp
             if response.status_code == 201:
                 return response.json().get("id")
             else:
-                print(f"❌ WP Media Error [{response.status_code}]: {response.text}")
+                logger.warning("wordpress_connection_failed", status_code=response.status_code, text=response.text)
                 return None
         except Exception as e:
-            print(f"❌ Виняток при завантаженні фото у WP: {e}")
+            logger.error("wordpress_load_failed", error=str(e))
             return None
 
 
@@ -77,8 +81,8 @@ async def create_lisfinity_listing(
                 post_data = response.json()
                 return post_data.get("id")
             else:
-                print(f"❌ WP Listing Error [{response.status_code}]: {response.text}")
+                logger.warning("wordpress_connection_failed", status_code=response.statu_code, text=response.text)
                 return None
         except Exception as e:
-            print(f"❌ Виняток при створенні оголошення у WP: {e}")
+            logger.error("wordpress_advert_creation_failed", error=str(e))
             return None

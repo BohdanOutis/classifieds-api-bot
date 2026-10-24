@@ -10,14 +10,14 @@ from datetime import datetime
 from .base import Base
 
 class PaymentType(str, Enum):
-    VIP_SUBSCRIPTION = "vip_subscription"
-    PRODUCT_PURCHASE = "product_purchase"
+    VIP_SUBSCRIPTION = "VIP_SUBSCRIPTION"
+    PRODUCT_PURCHASE = "PRODUCT_PURCHASE"
 
 class PaymentStatus(str, Enum):
-    PENDING = "pending"
-    SUCCESS = "success"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 class PaymentServiceType(str, Enum):
     BOOST_TOP = "BOOST_TOP"
@@ -30,7 +30,7 @@ class Payment(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     ad_id: Mapped[int] = mapped_column(ForeignKey("advertisements.id", ondelete="SET NULL"), nullable=True)
 
-    shop_order_number: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
+    telegram_charge_id: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
     
     amount: Mapped[DECIMAL] = mapped_column(DECIMAL, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), default="UAH")
@@ -44,7 +44,7 @@ class Payment(Base):
     )
 
     provider: Mapped[str] = mapped_column(String(32), default="portmone")
-    external_payment_id: Mapped[Optional[str]] = mapped_column(String(128), unique=True, nullable=True)
+    provider_charge_id: Mapped[Optional[str]] = mapped_column(String(128), unique=True, nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(

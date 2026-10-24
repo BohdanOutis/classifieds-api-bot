@@ -25,7 +25,6 @@ async def fetch_fresh_news(api_client: httpx.AsyncClient) -> List[Dict[str, Any]
 
             news_hash = generate_md5(link)
 
-
             if not await api_client.get("/processed_news", params={"news_hash": news_hash}):
                 fresh_news.append({
                     "source_id": source['id'],

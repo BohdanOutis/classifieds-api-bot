@@ -1,6 +1,19 @@
-[bot]
-token = "1234567890:AaBbCcDdEeFfGrOoShAHhIiJjKkLlMmNnOo"
+[db]
+host = "localhost"
+port = 5432
+user = "postgres"
+name = "bot_db"
 
+[wp]
+user = "your_wordpress_username"
+url = "url_to_your_site"
+
+[api]
+base_url = "http://localhost:8000/api/v1"
+
+[portmone]
+payee_id = "your_payee_id"
+gateway_url = "https://www.portmone.com.ua/gateway/"
 
 [logs]
 project_name = "telegram_bot"
@@ -9,5 +22,5 @@ datetime_format = "%Y-%m-%d %H:%M:%S"
 show_debug_logs = false
 time_in_utc = false
 use_colors_in_console = true
-renderer = "console"  # "console" or "json"
+renderer = "console"
 allow_third_party_logs = true

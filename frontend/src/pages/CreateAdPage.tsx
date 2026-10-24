@@ -123,31 +123,41 @@ const CreateAdPage = () => {
   const fieldError = (field: keyof FormErrors) =>
     touched[field] ? errors[field] : undefined;
 
+  // Утилітні класи для полів вводу
+  const getInputClasses = (hasError?: string) =>
+    `w-full px-4 py-3 bg-[var(--clr-surface-2)] border rounded-[var(--radius-sm)] text-[var(--clr-text)] text-sm outline-none transition-all duration-200 placeholder:text-[var(--clr-text-3)] disabled:opacity-50 ${
+      hasError
+        ? 'border-[var(--clr-rejected)]! focus:ring-3 focus:ring-red-500/10!'
+        : 'border-[var(--clr-border)] focus:border-[var(--clr-accent)] focus:ring-3 focus:ring-[rgba(108,99,255,0.15)] focus:bg-[var(--clr-surface-3)]'
+    }`;
+
   return (
-    <div className="page create-page">
-      <div className="page__header">
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="page__title">Нове оголошення</h1>
-          <p className="page__subtitle">Заповніть форму для публікації оголошення</p>
+          <h1 className="text-2xl font-bold text-[var(--clr-text)]">Нове оголошення</h1>
+          <p className="text-sm text-[var(--clr-text-2)] mt-1">Заповніть форму для публікації оголошення</p>
         </div>
       </div>
 
-      <div className="create-page__wrapper">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-7 items-start">
+        {/* Form */}
         <form
-          className="create-form"
+          className="bg-[var(--clr-surface)] border border-[var(--clr-border)] rounded-[var(--radius-lg)] p-8 flex flex-col gap-6"
           onSubmit={handleSubmit}
           noValidate
           id="create-ad-form"
         >
           {/* Name */}
-          <div className="form-group">
-            <label className="form-label" htmlFor="ad-name">
-              Назва <span className="form-required">*</span>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[0.8125rem] font-semibold text-[var(--clr-text-2)] tracking-wider uppercase" htmlFor="ad-name">
+              Назва <span className="text-[var(--clr-rejected)] ml-0.5">*</span>
             </label>
             <input
               id="ad-name"
               name="name"
-              className={`form-input ${fieldError('name') ? 'form-input--error' : ''}`}
+              className={getInputClasses(fieldError('name'))}
               type="text"
               placeholder="Введіть назву оголошення..."
               value={values.name}
@@ -157,19 +167,21 @@ const CreateAdPage = () => {
               maxLength={200}
             />
             {fieldError('name') && (
-              <p className="form-error" role="alert">{fieldError('name')}</p>
+              <p className="flex items-center gap-1.5 text-[0.8125rem] text-[var(--clr-rejected)] animate-fade-in-up" role="alert">
+                {fieldError('name')}
+              </p>
             )}
           </div>
 
           {/* Description */}
-          <div className="form-group">
-            <label className="form-label" htmlFor="ad-description">
-              Опис <span className="form-required">*</span>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[0.8125rem] font-semibold text-[var(--clr-text-2)] tracking-wider uppercase" htmlFor="ad-description">
+              Опис <span className="text-[var(--clr-rejected)] ml-0.5">*</span>
             </label>
             <textarea
               id="ad-description"
               name="description"
-              className={`form-textarea ${fieldError('description') ? 'form-input--error' : ''}`}
+              className={`${getInputClasses(fieldError('description'))} resize-y min-h-[100px]`}
               placeholder="Детальний опис товару або послуги..."
               value={values.description}
               onChange={handleChange}
@@ -178,22 +190,26 @@ const CreateAdPage = () => {
               rows={4}
             />
             {fieldError('description') && (
-              <p className="form-error" role="alert">{fieldError('description')}</p>
+              <p className="flex items-center gap-1.5 text-[0.8125rem] text-[var(--clr-rejected)] animate-fade-in-up" role="alert">
+                {fieldError('description')}
+              </p>
             )}
           </div>
 
           {/* Price + Category row */}
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="ad-price">
-                Ціна (₴) <span className="form-required">*</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.8125rem] font-semibold text-[var(--clr-text-2)] tracking-wider uppercase" htmlFor="ad-price">
+                Ціна (₴) <span className="text-[var(--clr-rejected)] ml-0.5">*</span>
               </label>
-              <div className="form-input-wrapper">
-                <span className="form-input-icon">₴</span>
+              <div className="relative flex items-center">
+                <span className="absolute left-3.5 text-[var(--clr-text-3)] text-sm font-medium pointer-events-none">
+                  ₴
+                </span>
                 <input
                   id="ad-price"
                   name="price"
-                  className={`form-input form-input--with-icon ${fieldError('price') ? 'form-input--error' : ''}`}
+                  className={`${getInputClasses(fieldError('price'))} pl-11`}
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -206,18 +222,20 @@ const CreateAdPage = () => {
                 />
               </div>
               {fieldError('price') && (
-                <p className="form-error" role="alert">{fieldError('price')}</p>
+                <p className="flex items-center gap-1.5 text-[0.8125rem] text-[var(--clr-rejected)] animate-fade-in-up" role="alert">
+                  {fieldError('price')}
+                </p>
               )}
             </div>
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="ad-category">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.8125rem] font-semibold text-[var(--clr-text-2)] tracking-wider uppercase" htmlFor="ad-category">
                 Категорія
               </label>
               <select
                 id="ad-category"
                 name="category"
-                className="form-select"
+                className={`${getInputClasses()} appearance-none pr-10 cursor-pointer bg-[url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='16'%20height='16'%20viewBox='0 0 24 24'%20fill='none'%20stroke='%2394a3b8'%20stroke-width='2'%3E%3Cpolyline%20points='6 9 12 15 18 9'/%3E%3C/svg%3E")] bg-no-repeat bg-[right_12px_center]`}
                 value={values.category}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -231,12 +249,12 @@ const CreateAdPage = () => {
           </div>
 
           {/* Telegram ID */}
-          <div className="form-group">
-            <label className="form-label" htmlFor="ad-tg-id">
-              Telegram ID користувача <span className="form-required">*</span>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[0.8125rem] font-semibold text-[var(--clr-text-2)] tracking-wider uppercase" htmlFor="ad-tg-id">
+              Telegram ID користувача <span className="text-[var(--clr-rejected)] ml-0.5">*</span>
             </label>
-            <div className="form-input-wrapper">
-              <span className="form-input-icon">
+            <div className="relative flex items-center">
+              <span className="absolute left-3.5 text-[var(--clr-text-3)] pointer-events-none">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
                 </svg>
@@ -244,7 +262,7 @@ const CreateAdPage = () => {
               <input
                 id="ad-tg-id"
                 name="tg_id"
-                className={`form-input form-input--with-icon ${fieldError('tg_id') ? 'form-input--error' : ''}`}
+                className={`${getInputClasses(fieldError('tg_id'))} pl-11`}
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -257,24 +275,27 @@ const CreateAdPage = () => {
               />
             </div>
             {fieldError('tg_id') && (
-              <p className="form-error" role="alert">{fieldError('tg_id')}</p>
+              <p className="flex items-center gap-1.5 text-[0.8125rem] text-[var(--clr-rejected)] animate-fade-in-up" role="alert">
+                {fieldError('tg_id')}
+              </p>
             )}
           </div>
 
           {/* Actions */}
-          <div className="form-actions">
+          <div className="flex gap-3 justify-end pt-2">
             <button
               type="button"
-              className="btn btn--ghost"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-[var(--radius-sm)] text-sm font-semibold bg-transparent border border-[var(--clr-border)] text-[var(--clr-text-2)] transition-all duration-200 cursor-pointer hover:enabled:text-[var(--clr-text)] hover:enabled:border-[var(--clr-border-hover)] hover:enabled:bg-[var(--clr-surface-3)] disabled:opacity-45 disabled:cursor-not-allowed"
               onClick={() => navigate('/dashboard')}
               disabled={creating}
               id="cancel-create-btn"
             >
               Скасувати
             </button>
+
             <button
               type="submit"
-              className="btn btn--primary"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-[var(--radius-sm)] text-sm font-semibold text-white bg-gradient-to-br from-[var(--clr-accent)] to-purple-600 shadow-[0_4px_14px_var(--clr-accent-glow)] transition-all duration-200 cursor-pointer hover:enabled:bg-gradient-to-br hover:enabled:from-[var(--clr-accent-hover)] hover:enabled:to-purple-500 hover:enabled:shadow-[0_6px_20px_var(--clr-accent-glow)] hover:enabled:-translate-y-0.5 active:enabled:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed"
               disabled={creating}
               id="submit-create-btn"
             >
@@ -297,26 +318,34 @@ const CreateAdPage = () => {
         </form>
 
         {/* Preview panel */}
-        <div className="create-page__preview">
-          <h2 className="create-page__preview-title">Попередній перегляд</h2>
-          <div className="ad-card ad-card--preview">
-            <div className="ad-card__header">
-              <span className="ad-card__category">
+        <div className="sticky top-6 flex flex-col gap-4">
+          <h2 className="text-[0.8125rem] font-semibold uppercase tracking-wider text-[var(--clr-text-2)]">
+            Попередній перегляд
+          </h2>
+
+          <div className="bg-[var(--clr-surface)] border border-[var(--clr-border)] rounded-[var(--radius-lg)] p-5 flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-[var(--clr-surface-2)] text-[var(--clr-text-2)]">
                 {CATEGORIES.find((c) => c.value === values.category)?.label ?? 'Інше'}
               </span>
-              <span className="badge badge--pending">На модерації</span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.7rem] font-bold tracking-wider uppercase bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                На модерації
+              </span>
             </div>
-            <h3 className="ad-card__title">
-              {values.name || <span className="placeholder-text">Назва оголошення</span>}
+
+            <h3 className="text-lg font-bold text-[var(--clr-text)] line-clamp-2">
+              {values.name || <span className="text-[var(--clr-text-3)] italic">Назва оголошення</span>}
             </h3>
-            <p className="ad-card__description">
-              {values.description || <span className="placeholder-text">Опис оголошення...</span>}
+
+            <p className="text-sm text-[var(--clr-text-2)] line-clamp-3 whitespace-pre-wrap">
+              {values.description || <span className="text-[var(--clr-text-3)] italic">Опис оголошення...</span>}
             </p>
-            <div className="ad-card__footer">
-              <span className="ad-card__price">
+
+            <div className="flex items-center justify-between pt-3 border-t border-[var(--clr-border)] text-sm">
+              <span className="font-bold text-[var(--clr-accent-2)] text-base">
                 {values.price ? `${Number(values.price).toLocaleString('uk-UA')} ₴` : '— ₴'}
               </span>
-              <span className="ad-card__user">
+              <span className="flex items-center gap-1.5 text-xs text-[var(--clr-text-3)]">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
                 </svg>

@@ -1,6 +1,9 @@
 import html
 import httpx
+import structlog
+
 from aiogram import Router, F
+from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram.filters import Command, or_f
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -8,6 +11,8 @@ from aiogram.filters.callback_data import CallbackData
 
 from ..keyboards.profile_kb import profile_kb
 from ..keyboards.main_kb import start_kb
+
+logger = structlog.get_logger()
 
 router = Router(name="profile")
 
@@ -80,7 +85,6 @@ async def show_advertisement_page(
     index: int
 ):
     response = await api_client.get("/ads/", params={"tg_id": tg_id})
-    print(f"{response.json()} + {response.status_code}")
     if response.status_code == 200:
         user_advertisements = response.json()
     elif response.status_code == 404:
@@ -89,6 +93,7 @@ async def show_advertisement_page(
             return await message_or_query.message.edit_text(text)
         return await message_or_query.answer(text)
     else:
+        logger.warning("server_connection_failed", status_code=response.status_code)
         text = "Помилка сервера. Спробуйте пізніше."
         if isinstance(message_or_query, CallbackQuery):
             return await message_or_query.answer(text, show_alert=True)
@@ -124,8 +129,7 @@ async def show_advertisement_page(
     kb_builder.button(text="Вперед ➡", callback_data=MyAdsPagination(index=index + 1))
     kb_builder.adjust(3)
 
-    photo_response = await api_client.get("/ads_photos/", params={"advert_id": data["id"]})
-    photos = photo_response.json() if photo_response.status_code == 200 else []
+    photos = data.get("photos", [])
     main_photo = photos[0]["file_id"] if photos else None
 
     if isinstance(message_or_query, CallbackQuery):
@@ -140,7 +144,7 @@ async def show_advertisement_page(
                     text=caption_text,
                     reply_markup=kb_builder.as_markup()
                 )
-        except Exception:
+        except TelegramAPIError:
             await message_or_query.message.delete()
             if main_photo:
                 await message_or_query.message.answer_photo(

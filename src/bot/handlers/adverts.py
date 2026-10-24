@@ -1,17 +1,20 @@
+import httpx
+import structlog
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto, LabeledPrice, PreCheckoutQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters.callback_data import CallbackData
-import httpx
+from src.models.advertisement import AdvertisementStatus
+
+logger = structlog.get_logger()
 
 router = Router()
 
-class AdvertPayment(CallbackData, prefix="advet_payment"):
+class AdvertPayment(CallbackData, prefix="advert_payment"):
     id: int
     name: str
     price: int
-    
 
 class PhotoPagination(CallbackData, prefix="photo_pagination"):
     index: int
@@ -44,7 +47,7 @@ async def show_advertisement_page(
         index: int,
         photo_index: int,
 ):
-    response = await api_client.get("/ads/", params={"status": "approved"})
+    response = await api_client.get("/ads/", params={"status": AdvertisementStatus.APPROVED.value})
     
     if response.status_code == 200:
         user_advertisements = response.json()
@@ -72,8 +75,7 @@ async def show_advertisement_page(
 
     data = user_advertisements[index]
 
-    photo_response = await api_client.get("/ads_photos/", params={"advert_id": data["id"]})
-    photos = photo_response.json() if photo_response.status_code == 200 else []
+    photos = data.get("photos", [])
     main_photo = photos[0]["file_id"] if photos else None
 
     if photos:
@@ -119,7 +121,8 @@ async def show_advertisement_page(
                     reply_markup=builder.as_markup(),
                     parse_mode="HTML"
                 )
-        except Exception:
+        except Exception as e:
+            logger.error("advert_page_failed", error=str(e))
             await message_or_query.answer()
     else:
         if photo:
